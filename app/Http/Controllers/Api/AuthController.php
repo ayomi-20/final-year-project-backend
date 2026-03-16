@@ -4,153 +4,235 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\TempUser; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class AuthController extends Controller
 {
-    // REGISTER
+    // REGISTER — just save the user, no OTP yet
     public function register(Request $request)
     {
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email:rfc,dns|unique:users|unique:temp_users,email',
-            'contact'    => 'required|digits:10|unique:users|unique:temp_users,contact',
-            'password'   => 'required|min:6'
+            'email'      => 'required|email:rfc,dns|unique:users,email',
+            'contact'    => 'required|digits:10|unique:users,contact',
+            'password'   => 'required|min:6',
         ]);
 
-        // Generate a unique 60-character token
-        $token = Str::random(60);
-
-        // Save temp user
-        $tempUser = TempUser::create([
-            'first_name'        => $request->first_name,
-            'last_name'         => $request->last_name,
-            'email'             => $request->email,
-            'contact'           => $request->contact,
-            'password'          => Hash::make($request->password),
-            'verification_token'=> $token,
-            'token_created_at'  => now()
+        User::create([
+            'first_name' => $request->first_name,
+            'last_name'  => $request->last_name,
+            'email'      => $request->email,
+            'contact'    => $request->contact,
+            'password'   => Hash::make($request->password),
         ]);
-
-        // Verification link
-        $verificationUrl = "twendeapp://verify-email?token={$token}";
-
-        // Send email with clickable link
-        Mail::send('emails.verify', [
-            'name' => $tempUser->first_name,
-            'verificationUrl' => $verificationUrl
-        ], function ($message) use ($tempUser) {
-            $message->to($tempUser->email)
-                    ->subject('Please verify your email');
-        });
-
-        // Auto verify ONLY in local environment (for Postman testing)
-        if (
-            app()->environment('local') &&
-            $request->has('auto_verify') &&
-            $request->auto_verify
-        ) {
-            $user = User::create([
-                'first_name' => $tempUser->first_name,
-                'last_name'  => $tempUser->last_name,
-                'email'      => $tempUser->email,
-                'contact'    => $tempUser->contact,
-                'password'   => $tempUser->password
-            ]);
-
-            $tempUser->delete();
-
-            return response()->json([
-                'message' => 'Registration successful! You can now log in.',
-                'user'    => $user
-            ]);
-        }
 
         return response()->json([
-            'message' => 'Registration in progress! Please check your email to verify your account.'
+            'message' => 'Registration successful! Please log in.',
         ], 201);
     }
 
-    // VERIFY EMAIL
-    public function verifyEmail(Request $request)
-{
-    $request->validate([
-        'token' => 'required|string'
-    ]);
-
-    $tempUser = TempUser::where('verification_token', $request->token)->first();
-
-    if (!$tempUser) {
-        return response()->json([
-            'message' => 'Invalid or expired verification link.'
-        ], 404);
-    }
-
-    if ($tempUser->token_created_at->addMinutes(10)->isPast()) {
-        $tempUser->delete();
-        return response()->json([
-            'message' => 'Verification link expired. Please register again.'
-        ], 410);
-    }
-
-    $user = User::create([
-        'first_name' => $tempUser->first_name,
-        'last_name'  => $tempUser->last_name,
-        'email'      => $tempUser->email,
-        'contact'    => $tempUser->contact,
-        'password'   => $tempUser->password
-    ]);
-
-    $tempUser->delete();
-
-    return response()->json([
-        'message' => 'Email verified! You can now log in.',
-        'user'    => $user
-    ]);
-}
-
-
-
-
+    // LOGIN — validate credentials, then send OTP
     public function login(Request $request)
     {
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
+
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Invalid credentials'
+                'message' => 'Invalid credentials.',
             ], 401);
         }
 
         $user = Auth::user();
 
-        $expiresAt = Carbon::now()->addDays(30); // 30 days from now
+        // Generate 6-digit OTP and store it on the user
+        $otp = strval(random_int(100000, 999999));
 
-        $token = $user->createToken(
-            'flutter-token',
-            ['*'],           // abilities, '*' = full access
-            $expiresAt       // token expiration
-        )->plainTextToken;
+        $user->login_otp         = $otp;
+        $user->login_otp_created_at = now();
+        $user->save();
+
+        // Send OTP email
+        Mail::send('emails.verify', [
+            'name' => $user->first_name,
+            'otp'  => $otp,
+        ], function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Your login verification code');
+        });
 
         return response()->json([
-            'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
+            'message' => 'Credentials verified. Please check your email for your login code.',
+            'email'   => $user->email,
         ]);
     }
 
-    // LOGOUT
+    // VERIFY OTP — confirms identity and returns token
+    public function verifyLoginOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp'   => 'required|digits:6',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        if ($user->login_otp !== $request->otp) {
+            return response()->json([
+                'message' => 'Invalid OTP. Please try again.',
+            ], 401);
+        }
+
+        if (Carbon::parse($user->login_otp_created_at)->addMinutes(10)->isPast()) {
+            $user->login_otp            = null;
+            $user->login_otp_created_at = null;
+            $user->save();
+
+            return response()->json([
+                'message' => 'OTP expired. Please log in again.',
+            ], 410);
+        }
+
+        // Clear OTP after successful use
+        $user->login_otp            = null;
+        $user->login_otp_created_at = null;
+        $user->save();
+
+        $token = $user->createToken(
+            'flutter-token',
+            ['*'],
+            Carbon::now()->addDays(30)
+        )->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful!',
+            'user'    => $user,
+            'token'   => $token,
+        ]);
+    }
+
+    // FORGOT PASSWORD — send OTP to email
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email'   => 'required|email',
+            'contact' => 'required',
+        ]);
+
+        $user = User::where('email', $request->email)
+                    ->where('contact', $request->contact)
+                    ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'No account found with those details.',
+            ], 404);
+        }
+
+        $otp = strval(random_int(100000, 999999));
+
+        $user->login_otp            = $otp;
+        $user->login_otp_created_at = now();
+        $user->save();
+
+        // ✅ uses emails.reset now
+        Mail::send('emails.reset', [
+            'name' => $user->first_name,
+            'otp'  => $otp,
+        ], function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Your password reset code');
+        });
+
+        return response()->json([
+            'message' => 'Reset code sent! Please check your email.',
+        ]);
+    }
+
+// VERIFY RESET CODE — confirm email + contact + OTP
+    public function verifyResetCode(Request $request)
+    {
+        $request->validate([
+            'email'   => 'required|email',
+            'contact' => 'required',
+            'otp'     => 'required|digits:6',
+        ]);
+
+        $user = User::where('email', $request->email)
+                    ->where('contact', $request->contact)
+                    ->where('login_otp', $request->otp)
+                    ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Invalid code or details. Please try again.',
+            ], 401);
+        }
+
+        if (Carbon::parse($user->login_otp_created_at)->addMinutes(10)->isPast()) {
+            $user->login_otp            = null;
+            $user->login_otp_created_at = null;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Code expired. Please request a new one.',
+            ], 410);
+        }
+
+        return response()->json([
+            'message' => 'Code verified! Please set your new password.',
+        ]);
+    }
+
+    // RESET PASSWORD — save new password
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'contact'  => 'required',
+            'password' => 'required|min:6',
+        ]);
+
+        $user = User::where('email', $request->email)
+                    ->where('contact', $request->contact)
+                    ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $user->password             = Hash::make($request->password);
+        $user->login_otp            = null;
+        $user->login_otp_created_at = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password reset successful! You can now log in.',
+        ]);
+    }
+
+        // LOGOUT
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
 
         return response()->json([
-            'message' => 'Logged out successfully'
+            'message' => 'Logged out successfully.',
         ]);
     }
 }
