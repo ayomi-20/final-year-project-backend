@@ -20,6 +20,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Filament\Forms\Components\FileUpload;
 
 class ServiceResource extends Resource
 {
@@ -78,6 +79,14 @@ class ServiceResource extends Resource
             Toggle::make('is_featured')
                 ->label('Featured')
                 ->default(false),
+
+            FileUpload::make('images')
+                ->label('Service Images')
+                ->image()
+                ->multiple()
+                ->disk('public')
+                ->directory('services')
+                ->nullable(),
         ]);
     }
 
