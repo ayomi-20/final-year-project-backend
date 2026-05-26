@@ -5,46 +5,41 @@ namespace App\Filament\Resources\Regions;
 use App\Filament\Resources\Regions\Pages\CreateRegion;
 use App\Filament\Resources\Regions\Pages\EditRegion;
 use App\Filament\Resources\Regions\Pages\ListRegions;
-use App\Filament\Resources\Regions\Schemas\RegionForm;
-use App\Filament\Resources\Regions\Tables\RegionsTable;
 use App\Models\Region;
-use BackedEnum;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class RegionResource extends Resource
 {
     protected static ?string $model = Region::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
-        return RegionForm::configure($schema);
+        return $schema->components([
+            TextInput::make('name')
+                ->required()
+                ->maxLength(255),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
-        return RegionsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
+        return $table->columns([
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('created_at')->dateTime()->sortable(),
+        ]);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListRegions::route('/'),
+            'index'  => ListRegions::route('/'),
             'create' => CreateRegion::route('/create'),
-            'edit' => EditRegion::route('/{record}/edit'),
+            'edit'   => EditRegion::route('/{record}/edit'),
         ];
     }
 }
