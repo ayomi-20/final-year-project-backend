@@ -14,10 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->alias([
-            'auth' => \App\Http\Middleware\Authenticate::class,
-        ]);
-    })
+    $middleware->alias([
+        'auth' => \App\Http\Middleware\Authenticate::class,
+    ]);
+
+    $middleware->append(
+        \Illuminate\Http\Middleware\HandleCors::class
+    );
+})
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
