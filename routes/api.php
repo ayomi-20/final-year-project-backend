@@ -28,6 +28,7 @@ Route::get('/home',                         [HomeController::class, 'index']);
 Route::get('/services',                     [ServiceController::class, 'index']);
 Route::get('/services/{slug}',              [ServiceController::class, 'show']);
 Route::get('/services/{serviceId}/reviews', [ReviewController::class, 'index']);
+Route::get('categories', fn() => \App\Models\Category::all(['id', 'name', 'slug']));
 
 // ── Authenticated routes ───────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {

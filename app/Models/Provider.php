@@ -10,17 +10,20 @@ class Provider extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'business_name',
-        'business_type',
-        'district',
-        'address',
-        'description',
-        'logo',
-        'cover_photo',
-        'status',
-        'rejection_reason',
-    ];
+    'user_id',
+    'business_name',
+    'business_type',
+    'district',
+    'address',
+    'description',
+    'logo',
+    'cover_photo',
+    'national_id',
+    'trading_license',
+    'status',
+    'rejection_reason',
+];
+
 
     // ── Relationships ──────────────────────────────────────────────────────
 

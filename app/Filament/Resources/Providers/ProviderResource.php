@@ -16,6 +16,8 @@ use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Filament\Forms\Components\FileUpload;
+use App\Models\Category;
 
 class ProviderResource extends Resource
 {
@@ -23,36 +25,63 @@ class ProviderResource extends Resource
     protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
-    {
-        return $schema->components([
-            Select::make('user_id')
-                ->label('User Account')
-                ->options(User::all()->pluck('email', 'id'))
-                ->searchable()
-                ->required(),
+{
+    return $schema->components([
+        Select::make('user_id')
+            ->label('User Account')
+            ->options(User::all()->pluck('email', 'id'))
+            ->searchable()
+            ->required(),
 
-            TextInput::make('business_name')->required(),
-            TextInput::make('business_type')->required(),
-            TextInput::make('district')->required(),
-            TextInput::make('address')->required(),
+        TextInput::make('business_name')->required(),
 
-            Textarea::make('description')->rows(4)->nullable(),
+        Select::make('business_type')
+            ->label('Business Type')
+            ->options(Category::all()->pluck('name', 'name'))
+            ->searchable()
+            ->required(),
 
-            Select::make('status')
-                ->options([
-                    'pending'  => 'Pending',
-                    'approved' => 'Approved',
-                    'rejected' => 'Rejected',
-                ])
-                ->default('pending')
-                ->required(),
+        TextInput::make('district')->required(),
+        TextInput::make('address')->required(),
 
-            Textarea::make('rejection_reason')
-                ->rows(3)
-                ->nullable()
-                ->label('Rejection Reason (if rejected)'),
-        ]);
-    }
+        Textarea::make('description')->rows(4)->nullable(),
+
+        Select::make('status')
+            ->options([
+                'pending'  => 'Pending',
+                'approved' => 'Approved',
+                'rejected' => 'Rejected',
+            ])
+            ->default('pending')
+            ->required(),
+
+        Textarea::make('rejection_reason')
+            ->rows(3)
+            ->nullable()
+            ->label('Rejection Reason (if rejected)'),
+
+        FileUpload::make('logo')
+            ->label('Business Logo')
+            ->image()
+            ->disk('public')
+            ->directory('provider-logos')
+            ->nullable(),
+
+        FileUpload::make('national_id')
+            ->label('National ID')
+            ->acceptedFileTypes(['image/jpeg', 'image/png', 'application/pdf'])
+            ->disk('public')
+            ->directory('provider-documents')
+            ->nullable(),
+
+        FileUpload::make('trading_license')
+            ->label('Trading License / Business License')
+            ->acceptedFileTypes(['image/jpeg', 'image/png', 'application/pdf'])
+            ->disk('public')
+            ->directory('provider-documents')
+            ->nullable(),
+    ]);
+}
 
     public static function table(Table $table): Table
     {
@@ -76,18 +105,52 @@ class ProviderResource extends Resource
                     'rejected' => 'Rejected',
                 ]),
         ])->actions([
-            Action::make('approve')
-                ->color('success')
-                ->action(fn (Provider $record) => $record->update(['status' => 'approved']))
-                ->requiresConfirmation()
-                ->visible(fn (Provider $record) => $record->status === 'pending'),
+    Action::make('approve')
+        ->color('success')
+        ->action(function (Provider $record) {
+            $record->update(['status' => 'approved']);
+            $record->user->update(['role' => 'provider']);
+            \Illuminate\Support\Facades\Mail::to($record->user->email)
+                ->send(new \App\Mail\ProviderApproved($record));
+        })
+        ->requiresConfirmation()
+        ->visible(fn (Provider $record) => $record->status !== 'approved'),
 
-            Action::make('reject')
-                ->color('danger')
-                ->action(fn (Provider $record) => $record->update(['status' => 'rejected']))
-                ->requiresConfirmation()
-                ->visible(fn (Provider $record) => $record->status === 'pending'),
-        ]);
+    Action::make('reject')
+        ->color('danger')
+        ->form([
+            \Filament\Forms\Components\Textarea::make('rejection_reason')
+                ->label('Reason for Rejection')
+                ->placeholder('Explain why this application is being rejected...')
+                ->required()
+                ->rows(4),
+        ])
+        ->action(function (Provider $record, array $data) {
+            $record->update([
+                'status'           => 'rejected',
+                'rejection_reason' => $data['rejection_reason'],
+            ]);
+            $record->user->update(['role' => 'tourist']);
+            \Illuminate\Support\Facades\Mail::to($record->user->email)
+                ->send(new \App\Mail\ProviderRejected($record, $data['rejection_reason']));
+        })
+        ->requiresConfirmation()
+        ->modalHeading('Reject Provider Application')
+        ->modalDescription('Please provide a reason for rejection. This will be emailed to the applicant.')
+        ->visible(fn (Provider $record) => $record->status !== 'rejected'),
+
+    Action::make('set_pending')
+        ->label('Set Pending')
+        ->color('warning')
+        ->action(function (Provider $record) {
+            $record->update(['status' => 'pending']);
+            $record->user->update(['role' => 'tourist']);
+        })
+        ->requiresConfirmation()
+        ->modalHeading('Set Application Back to Pending')
+        ->modalDescription('This will revert the provider status to pending and change the user role back to tourist.')
+        ->visible(fn (Provider $record) => $record->status === 'approved'),
+]);
     }
 
     public static function getPages(): array

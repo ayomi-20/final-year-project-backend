@@ -37,9 +37,6 @@ class ProviderController extends Controller
             'status'        => 'pending',
         ]);
 
-        // Update user role to provider
-        $user->update(['role' => 'provider']);
-
         return response()->json([
             'message'  => 'Provider profile created.',
             'provider' => $provider,
