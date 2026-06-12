@@ -16,7 +16,9 @@ class ProviderRejected extends Mailable
     public function __construct(
         public Provider $provider,
         public string $reason
-    ) {}
+    ) {
+        $this->provider->loadMissing('user');
+    }
 
     public function envelope(): Envelope
     {
@@ -29,6 +31,15 @@ class ProviderRejected extends Mailable
     {
         return new Content(
             view: 'emails.provider-rejected',
+            with: [
+                'provider' => $this->provider,
+                'reason'   => $this->reason,
+            ],
         );
+    }
+
+    public function attachments(): array
+    {
+        return [];
     }
 }

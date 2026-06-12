@@ -235,4 +235,11 @@ class AuthController extends Controller
             'message' => 'Logged out successfully.',
         ]);
     }
+
+    public function user(Request $request)
+{
+    return response()->json(
+        $request->user()->load('provider')
+    );
+}
 }

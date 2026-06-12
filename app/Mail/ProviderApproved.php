@@ -13,7 +13,10 @@ class ProviderApproved extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Provider $provider) {}
+    public function __construct(public Provider $provider)
+    {
+        $this->provider->loadMissing('user');
+    }
 
     public function envelope(): Envelope
     {
@@ -26,6 +29,12 @@ class ProviderApproved extends Mailable
     {
         return new Content(
             view: 'emails.provider-approved',
+            with: ['provider' => $this->provider],
         );
+    }
+
+    public function attachments(): array
+    {
+        return [];
     }
 }

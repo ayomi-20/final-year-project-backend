@@ -22,6 +22,7 @@ Route::post('/verify-reset-code',  [AuthController::class, 'verifyResetCode']);
 Route::post('/reset-password',     [AuthController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+// Route::patch('/provider/update', [ProviderController::class, 'update']);
 
 // ── Public routes ──────────────────────────────────────────────────────────
 Route::get('/home',                         [HomeController::class, 'index']);
@@ -48,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/provider/register',               [ProviderController::class, 'register']);
     Route::post('/provider/documents',              [ProviderController::class, 'uploadDocuments']);
     Route::post('/provider/submit',                 [ProviderController::class, 'submit']);
+    Route::patch('/provider/update', [ProviderController::class, 'update']);
+    Route::get('/user', [AuthController::class, 'user']);
     Route::get('/provider/profile',                 [ProviderController::class, 'profile']);
 
     // Stats
