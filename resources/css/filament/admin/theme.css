@@ -1,0 +1,14 @@
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+[data-sidebar] {
+    background-color: #14532d !important;
+}
+
+nav[data-sidebar-nav] {
+    background-color: #14532d !important;
+}
+
+header[data-sidebar-header] {
+    background-color: #14532d !important;
+    border-bottom-color: #166534 !important;
+}

@@ -17,6 +17,7 @@ Route::get('/test', function () {
 Route::post('/register',           [AuthController::class, 'register']);
 Route::post('/login',              [AuthController::class, 'login']);
 Route::post('/verify-login-otp',   [AuthController::class, 'verifyLoginOtp']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/forgot-password',    [AuthController::class, 'forgotPassword']);
 Route::post('/verify-reset-code',  [AuthController::class, 'verifyResetCode']);
 Route::post('/reset-password',     [AuthController::class, 'resetPassword']);

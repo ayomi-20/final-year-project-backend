@@ -197,6 +197,37 @@ class AuthController extends Controller
         ]);
     }
 
+    public function resendOtp(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found.'], 404);
+    }
+
+    $otp = strval(random_int(100000, 999999));
+
+    $user->login_otp            = $otp;
+    $user->login_otp_created_at = now();
+    $user->save();
+
+    Mail::send('emails.verify', [
+        'name' => $user->first_name,
+        'otp'  => $otp,
+    ], function ($message) use ($user) {
+        $message->to($user->email)
+                ->subject('Your login verification code');
+    });
+
+    return response()->json([
+        'message' => 'A new code has been sent to your email.',
+    ]);
+}
+
     // RESET PASSWORD — save new password
     public function resetPassword(Request $request)
     {
