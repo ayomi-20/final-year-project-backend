@@ -31,8 +31,8 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->colors([
-                'primary' => Color::Green,  // 👈 changed from Amber to Green
-            ])
+    'primary' => Color::hex('#0F3B2E'),
+])  // 👈 changed from Amber to Green
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

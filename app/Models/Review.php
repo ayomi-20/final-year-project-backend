@@ -10,12 +10,13 @@ class Review extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tourist_id',
-        'service_id',
-        'booking_id',
-        'rating',
-        'comment',
-    ];
+    'tourist_id',
+    'service_id',
+    'booking_id',
+    'rating',
+    'comment',
+    'is_hidden',
+];
 
     // ── Relationships ──────────────────────────────────────────────────────
 

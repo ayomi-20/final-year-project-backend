@@ -73,6 +73,11 @@ public function getFilamentName(): string
         return $this->hasMany(Review::class, 'tourist_id');
     }
 
+    public function notifications()
+{
+    return $this->hasMany(AppNotification::class);
+}
+
     // ── Role helpers ───────────────────────────────────────────────────────
 
     public function isAdmin(): bool

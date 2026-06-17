@@ -1,14 +1,93 @@
 @import '/vendor/filament/filament/resources/css/theme.css';
 
-[data-sidebar] {
-    background-color: #14532d !important;
+.fi-sidebar {
+    background-color: #0F3B2E !important;
 }
 
-nav[data-sidebar-nav] {
-    background-color: #14532d !important;
+.fi-sidebar-header {
+    background-color: #0F3B2E !important;
+    border-bottom-color: #1C5E4A !important;
 }
 
-header[data-sidebar-header] {
-    background-color: #14532d !important;
-    border-bottom-color: #166534 !important;
+.fi-sidebar-nav {
+    background-color: #0F3B2E !important;
+}
+
+.fi-sidebar-item-label {
+    color: #E3EFE5 !important;
+}
+
+.fi-sidebar-item.fi-active {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px;
+}
+
+.fi-sidebar-item.fi-active .fi-sidebar-item-label {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+.fi-sidebar-item:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px;
+}
+
+.fi-logo {
+    color: #ffffff !important;
+}
+
+.fi-sidebar-item.fi-active .fi-sidebar-item-button {
+    color: #ffffff !important;
+}
+
+.fi-sidebar-item.fi-active svg {
+    color: #ffffff !important;
+}
+
+.fi-sidebar-item-button {
+    color: #E3EFE5 !important;
+}
+
+.fi-sidebar-item-button:hover {
+    color: #ffffff !important;
+}
+
+.fi-topbar {
+    background-color: #ffffff !important;
+}
+
+.fi-logo,
+.fi-topbar .fi-logo {
+    color: #0F3B2E !important;
+    font-weight: 700;
+}
+
+
+li.fi-sidebar-item.fi-active a.fi-sidebar-item-btn {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 8px;
+}
+
+li.fi-sidebar-item.fi-active a.fi-sidebar-item-btn .fi-sidebar-item-label {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+}
+
+li.fi-sidebar-item.fi-active a.fi-sidebar-item-btn .fi-icon {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+li.fi-sidebar-item:not(.fi-active) a.fi-sidebar-item-btn .fi-sidebar-item-label {
+    color: #E3EFE5 !important;
+}
+
+li.fi-sidebar-item:not(.fi-active) a.fi-sidebar-item-btn .fi-icon {
+    color: #E3EFE5 !important;
+}
+
+li.fi-sidebar-item a.fi-sidebar-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.10) !important;
+    border-radius: 8px;
 }

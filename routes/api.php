@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ProviderController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::get('/test', function () {
     return response()->json(['message' => 'API is working!']);
@@ -34,6 +35,14 @@ Route::get('categories', fn() => \App\Models\Category::all(['id', 'name', 'slug'
 
 // ── Authenticated routes ───────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
+    
+
+     // Notifications
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::patch('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
+    Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}',      [NotificationController::class, 'destroy']);
 
     // Tourist bookings
     Route::post('/tourist/bookings',                [BookingController::class, 'store']);

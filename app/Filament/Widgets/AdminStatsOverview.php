@@ -38,6 +38,11 @@ class AdminStatsOverview extends BaseWidget
                 )
                 ->descriptionIcon('heroicon-m-calendar-days')
                 ->color('info'),
+
+            Stat::make('Total Reviews', \App\Models\Review::count())
+    ->description(\App\Models\Review::where('is_hidden', true)->count() . ' hidden')
+    ->descriptionIcon('heroicon-m-star')
+    ->color('warning'),
         ];
     }
 }

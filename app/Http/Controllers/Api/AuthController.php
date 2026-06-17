@@ -9,32 +9,41 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use App\Services\NotificationService;
 
 class AuthController extends Controller
 {
     // REGISTER — just save the user, no OTP yet
     public function register(Request $request)
-    {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email:rfc,dns|unique:users,email',
-            'contact'    => 'required|digits:9|unique:users,contact',
-            'password'   => 'required|min:6',
-        ]);
+{
+    $request->validate([
+        'first_name' => 'required|string|max:255',
+        'last_name'  => 'required|string|max:255',
+        'email'      => 'required|email:rfc,dns|unique:users,email',
+        'contact'    => 'required|digits:9|unique:users,contact',
+        'password'   => 'required|min:6',
+    ]);
 
-        User::create([
-            'first_name' => $request->first_name,
-            'last_name'  => $request->last_name,
-            'email'      => $request->email,
-            'contact'    => $request->contact,
-            'password'   => Hash::make($request->password),
-        ]);
+    $user = User::create([
+        'first_name' => $request->first_name,
+        'last_name'  => $request->last_name,
+        'email'      => $request->email,
+        'contact'    => $request->contact,
+        'password'   => Hash::make($request->password),
+    ]);
 
-        return response()->json([
-            'message' => 'Registration successful! Please log in.',
-        ], 201);
-    }
+    // ✅ notification BEFORE return
+    NotificationService::notifyUser(
+        $user->id,
+        'welcome',
+        'Welcome to Twende Uganda! 🎉',
+        'Your account has been created successfully. Start exploring amazing destinations.',
+    );
+
+    return response()->json([
+        'message' => 'Registration successful! Please log in.',
+    ], 201);
+}
 
     // LOGIN — validate credentials, then send OTP
     public function login(Request $request)
@@ -75,54 +84,63 @@ class AuthController extends Controller
     }
 
     // VERIFY OTP — confirms identity and returns token
-    public function verifyLoginOtp(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'otp'   => 'required|digits:6',
-        ]);
+   public function verifyLoginOtp(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'otp'   => 'required|digits:6',
+    ]);
 
-        $user = User::where('email', $request->email)->first();
+    $user = User::where('email', $request->email)
+                ->where('login_otp', $request->otp)
+                ->first();
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not found.',
-            ], 404);
-        }
+    if (!$user) {
+        return response()->json([
+            'message' => 'Invalid verification code.',
+        ], 401);
+    }
 
-        if ($user->login_otp !== $request->otp) {
-            return response()->json([
-                'message' => 'Invalid OTP. Please try again.',
-            ], 401);
-        }
-
-        if (Carbon::parse($user->login_otp_created_at)->addMinutes(10)->isPast()) {
-            $user->login_otp            = null;
-            $user->login_otp_created_at = null;
-            $user->save();
-
-            return response()->json([
-                'message' => 'OTP expired. Please log in again.',
-            ], 410);
-        }
-
-        // Clear OTP after successful use
-        $user->login_otp            = null;
+    // Check whether OTP expired
+    if (
+        !$user->login_otp_created_at ||
+        Carbon::parse($user->login_otp_created_at)
+            ->addMinutes(10)
+            ->isPast()
+    ) {
+        $user->login_otp = null;
         $user->login_otp_created_at = null;
         $user->save();
 
-        $token = $user->createToken(
-            'flutter-token',
-            ['*'],
-            Carbon::now()->addDays(30)
-        )->plainTextToken;
-
         return response()->json([
-            'message' => 'Login successful!',
-            'user'    => $user,
-            'token'   => $token,
-        ]);
+            'message' => 'Verification code expired. Please request a new one.',
+        ], 410);
     }
+
+    // Clear OTP
+    $user->login_otp = null;
+    $user->login_otp_created_at = null;
+    $user->save();
+
+    // Create Sanctum token
+    $token = $user->createToken(
+        'flutter-token'
+    )->plainTextToken;
+
+    NotificationService::notifyUser(
+        $user->id,
+        'login',
+        'Login Successful',
+        'You logged in successfully. Welcome back, ' .
+        $user->first_name . '!'
+    );
+
+    return response()->json([
+        'message' => 'Login successful!',
+        'user'    => $user,
+        'token'   => $token,
+    ]);
+}
 
     // FORGOT PASSWORD — send OTP to email
     public function forgotPassword(Request $request)
