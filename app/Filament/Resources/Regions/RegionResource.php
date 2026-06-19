@@ -11,10 +11,12 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use BackedEnum;
 
 class RegionResource extends Resource
 {
     protected static ?string $model = Region::class;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-map';
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema

@@ -18,10 +18,12 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Forms\Components\FileUpload;
 use App\Models\Category;
+use BackedEnum;
 
 class ProviderResource extends Resource
 {
     protected static ?string $model = Provider::class;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-storefront';
     protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema

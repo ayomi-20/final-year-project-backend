@@ -14,10 +14,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use BackedEnum;
 
 class ReviewResource extends Resource
 {
     protected static ?string $model = Review::class;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
     protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema

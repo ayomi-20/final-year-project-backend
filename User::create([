@@ -1,0 +1,16 @@
+[90m= [39m[
+    [32m"[39m[32mid[39m[32m"[39m,
+    [32m"[39m[32memail[39m[32m"[39m,
+    [32m"[39m[32memail_verified_at[39m[32m"[39m,
+    [32m"[39m[32mpassword[39m[32m"[39m,
+    [32m"[39m[32mlogin_otp[39m[32m"[39m,
+    [32m"[39m[32mlogin_otp_created_at[39m[32m"[39m,
+    [32m"[39m[32mrole[39m[32m"[39m,
+    [32m"[39m[32mavatar[39m[32m"[39m,
+    [32m"[39m[32mremember_token[39m[32m"[39m,
+    [32m"[39m[32mcreated_at[39m[32m"[39m,
+    [32m"[39m[32mupdated_at[39m[32m"[39m,
+    [32m"[39m[32mfirst_name[39m[32m"[39m,
+    [32m"[39m[32mlast_name[39m[32m"[39m,
+    [32m"[39m[32mcontact[39m[32m"[39m,
+  ]
